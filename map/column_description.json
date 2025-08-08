@@ -1,0 +1,56 @@
+{
+  "features": [
+    {
+      "column_name": "No",
+      "description": "数据记录的序号（索引），无实际业务意义，仅用于标识每条记录"
+    },
+    {
+      "column_name": "year",
+      "description": "年份，范围为2010-2014年"
+    },
+    {
+      "column_name": "month",
+      "description": "月份，范围为1-12月"
+    },
+    {
+      "column_name": "day",
+      "description": "日期，范围为1-31日（根据月份不同有所差异）"
+    },
+    {
+      "column_name": "hour",
+      "description": "小时，范围为0-23时（代表当天0点至23点的每小时数据）"
+    },
+    {
+      "column_name": "pm2.5",
+      "description": "PM2.5浓度，单位为μg/m³，是核心目标变量，值越高表示空气污染越严重，可能存在缺失值"
+    },
+    {
+      "column_name": "DEWP",
+      "description": "露点温度，单位为℃，反映空气湿度，值越低表示空气越干燥"
+    },
+    {
+      "column_name": "TEMP",
+      "description": "气温，单位为℃，即环境温度"
+    },
+    {
+      "column_name": "PRES",
+      "description": "气压，单位为hPa（百帕），即大气压强"
+    },
+    {
+      "column_name": "cbwd",
+      "description": "组合风向，字符串类型，可能值包括NE（东北风）、NW（西北风）、SE（东南风）、cv（静风）等，代表风向组合类型"
+    },
+    {
+      "column_name": "Iws",
+      "description": "累积风速，单位为m/s（米/秒），表示一段时间内的风速累积值"
+    },
+    {
+      "column_name": "Is",
+      "description": "累积降雪量，单位为mm（毫米），无降雪时为0"
+    },
+    {
+      "column_name": "Ir",
+      "description": "累积降雨量，单位为mm（毫米），无降雨时为0"
+    }
+  ]
+}
