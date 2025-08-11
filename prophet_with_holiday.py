@@ -25,10 +25,10 @@ except:
 df = pd.read_csv(os.path.join("data", "PRSA_data_2010.1.1-2014.12.31.csv"))
 
 # 2. 生成datetime列
-df['datetime'] = pd.to_datetime(df[['year', 'month', 'day', 'hour']])
+df['datetime'] = pd.to_datetime(df[['year', 'month', 'day', 'hour']]) # 将指定的列转换为日期时间格式
 
-# 3. 新增日期列（不含时间）
-df['date'] = df['datetime'].dt.date
+# 3. 新增日期列
+df['date'] = df['datetime'].dt.date # 将datetime类型转换为date类型
 
 # 4. 按天聚合计算均值
 df_daily = df.groupby('date').agg({
@@ -49,7 +49,7 @@ df_daily = df_daily[['ds', 'y', 'TEMP', 'DEWP', 'PRES', 'Iws']]
 # 7. 处理缺失值
 print("缺失值统计：")
 print(df_daily.isnull().sum())
-df_daily = df_daily.dropna()
+df_daily = df_daily.dropna() # 删除包含缺失值的行，更新DataFrame
 
 # 8. 利用chinese_calendar自动生成节假日DataFrame
 def generate_holiday_df(start_date, end_date):
@@ -57,7 +57,7 @@ def generate_holiday_df(start_date, end_date):
     holidays = []
     for d in dates:
         if chinese_calendar.is_holiday(d):
-            holidays.append({'holiday': 'chinese_holiday', 'ds': d, 'lower_window': 0, 'upper_window': 1})
+            holidays.append({'holiday': 'chinese_holiday', 'ds': d, 'lower_window': 0, 'upper_window': 1})        
     return pd.DataFrame(holidays)
 
 holidays = generate_holiday_df(df_daily['ds'].min(), df_daily['ds'].max())
