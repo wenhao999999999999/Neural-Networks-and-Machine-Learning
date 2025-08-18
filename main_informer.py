@@ -1,11 +1,13 @@
-import argparse
+import argparse # 解析命令行参数
 import os
 import torch
 
-from exp.exp_informer import Exp_Informer
+from exp.exp_informer import Exp_Informer # 导入自定义的实验类Exp_Informer，该类负责设置实验、训练模型、测试模型和预测未来数据。
 
-parser = argparse.ArgumentParser(description='[Informer] Long Sequences Forecasting')
 
+parser = argparse.ArgumentParser(description='[Informer] Long Sequences Forecasting') # 使用argparse模块创建一个参数解析器，解析命令行输入的参数，这些参数用于配置实验的各种设置。
+
+# 定义了一系列的命令行参数，包括模型类型、数据集、数据文件路径、预测任务类型、目标特征、时间特征编码频率、模型检查点路径、序列长度、输入输出尺寸、模型维度、注意力机制参数、训练参数等。
 parser.add_argument('--model', type=str, required=True, default='informer',help='model of experiment, options: [informer, informerstack, informerlight(TBD)]')
 
 parser.add_argument('--data', type=str, required=True, default='ETTh1', help='data')
