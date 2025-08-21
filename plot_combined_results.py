@@ -90,91 +90,85 @@ def plot_combined_predictions(args):
     # 根据参数生成结果文件夹路径，与训练时保持一致
     result_dir = f"./results/lstm_{args.data_name}_{args.features}_sl{args.seq_len}_pl{args.pred_len}_hd{args.hidden_dim}_nl{args.num_layers}_0"
     
-    # 检查结果文件夹是否存在
     if not os.path.exists(result_dir):
         print(f"错误：结果文件夹 {result_dir} 不存在")
         return
     
     # 1. 加载所有预测结果
     try:
-        y_test_true = np.load(os.path.join(result_dir, 'y_test_true.npy'))  # 形状：(样本数, pred_len)
-        y_test_pred = np.load(os.path.join(result_dir, 'y_test_pred.npy'))  # 形状：(样本数, pred_len)
-        future_preds = np.load(os.path.join(result_dir, 'future_predictions.npy'))  # 形状：(pred_len,)
+        y_test_true = np.load(os.path.join(result_dir, 'y_test_true.npy'))  # (N, pred_len)
+        y_test_pred = np.load(os.path.join(result_dir, 'y_test_pred.npy'))  # (N, pred_len)
+        future_preds = np.load(os.path.join(result_dir, 'future_predictions.npy'))  # (pred_len,)
     except FileNotFoundError as e:
         print(f"错误：在结果文件夹中未找到预测结果文件: {e}")
         return
     
-    # 打印npy文件形状
     print_npy_shapes(result_dir)
+
+    # 2. 正确拼接测试集序列
+    # N, H = y_test_true.shape  # 样本数，预测步长
+    # L = N + H - 1             # 测试集预测时间总长度
     
-    # 2. 处理测试集数据（拼接为完整序列）
+    # i_idx = np.minimum(np.arange(L), N - 1)
+    # j_idx = np.arange(L) - i_idx
+    
+    # full_test_true = y_test_true[i_idx, j_idx]
+    # full_test_pred = y_test_pred[i_idx, j_idx]
+    # print(f"拼接后长度={len(full_test_true)} (应为 {L})")
+
+    # 2. 每隔 pred_len 天拼接测试集真实值和预测值
+    N, H = y_test_true.shape
+    step = H  # 每隔 H 天取一次样本
+    selected_indices = list(range(0, N, step))  # 选取样本的索引
     full_test_true = []
     full_test_pred = []
-    for i in range(len(y_test_true)):
-        full_test_true.extend(y_test_true[i])
-        full_test_pred.extend(y_test_pred[i])
     
-    # 计算测试集预测序列的总长度（非重叠）
-    total_test_length = len(y_test_true) + args.pred_len - 1
-    full_test_true = full_test_true[-total_test_length:]  # 取最后non-overlap的部分
-    full_test_pred = full_test_pred[-total_test_length:]
+    for idx in selected_indices:
+        full_test_true.extend(y_test_true[idx])
+        full_test_pred.extend(y_test_pred[idx])
     
-    # 3. 获取测试集对应的日期
+    print(f"每隔 {H} 天拼接后的长度={len(full_test_true)}") 
+
+    # 3. 获取测试集日期
     test_dates = get_test_dates(args, len(y_test_true))
     
-    # 确保日期长度与预测序列长度一致
     if len(test_dates) > len(full_test_true):
         test_dates = test_dates[:len(full_test_true)]
     elif len(test_dates) < len(full_test_true):
-        # 如果日期不足，从测试集预测值中截取
         full_test_true = full_test_true[:len(test_dates)]
         full_test_pred = full_test_pred[:len(test_dates)]
     
-    # 检查test_dates是否为空
     if len(test_dates) == 0:
         print("错误：测试集日期为空，无法生成图表")
         return
     
-    # 4. 生成未来预测的日期
-    last_test_date = test_dates.iloc[-1]  # 使用iloc确保按位置访问
+    # 4. 生成未来预测日期
+    last_test_date = test_dates.iloc[-1]
     future_dates = generate_future_dates(last_test_date, len(future_preds))
     
-    # 5. 创建图表
+    # 5. 绘制
     plt.figure(figsize=(14, 8))
     
-    # 绘制测试集真实值
     plt.plot(test_dates, full_test_true, 'b-', label='测试集真实值', linewidth=2)
-    
-    # 绘制测试集预测值
     plt.plot(test_dates, full_test_pred, 'r-', label='测试集预测值', linewidth=2)
-    
-    # 绘制未来预测值
     plt.plot(future_dates, future_preds, 'g--', label='未来预测值', linewidth=2)
     
-    # 添加垂直线分隔测试集和未来预测
     plt.axvline(x=last_test_date, color='gray', linestyle=':', linewidth=2, alpha=0.7)
     plt.text(last_test_date, plt.ylim()[1]*0.95, '预测开始', 
              rotation=90, verticalalignment='top', fontsize=10)
     
-    # 设置图表标题和标签
     plt.title(f'电力负荷预测结果 (seq_len={args.seq_len}, pred_len={args.pred_len})', fontsize=16)
     plt.xlabel('日期', fontsize=12)
     plt.ylabel(args.target_col, fontsize=12)
     plt.legend(fontsize=12)
     plt.grid(True, alpha=0.3)
-    
-    # 旋转x轴标签以避免重叠
     plt.xticks(rotation=45)
-    
-    # 调整布局
     plt.tight_layout()
     
-    # 确保img目录存在
     img_dir = os.path.join(result_dir, 'img')
     if not os.path.exists(img_dir):
         os.makedirs(img_dir)
     
-    # 保存图表
     save_path = os.path.join(img_dir, 'combined_predictions.png')
     plt.savefig(save_path, dpi=300, bbox_inches='tight')
     plt.close()
