@@ -10,7 +10,7 @@ from sklearn.preprocessing import MinMaxScaler
 
 from data.data_loader import get_dataloader, TimeSeriesDataset
 from models.lstm_model import LSTMForecaster
-from utils.tools import calculate_metrics, plot_predictions
+from utils.tools import calculate_metrics
 
 class Exp_LSTM:
     """LSTM 实验类，仿照 Informer 的结构"""
