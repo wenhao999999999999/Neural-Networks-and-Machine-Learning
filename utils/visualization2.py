@@ -110,7 +110,7 @@ plt.gca().xaxis.set_major_locator(mdates.HourLocator(interval=12))
 plt.gcf().autofmt_xdate()  # 自动旋转日期标签
 
 # 添加标签和图例
-plt.title(f'ETTh1 Prediction Comparison (Sample {sample_idx}, Variable {features[var_idx]})', fontsize=16)
+plt.title(f'Prediction Comparison (Sample {sample_idx}, Variable {features[var_idx]})', fontsize=16)
 plt.xlabel('Time', fontsize=13)
 plt.ylabel('Value', fontsize=13)
 plt.legend(loc='upper left', fontsize=11)
@@ -146,3 +146,21 @@ plt.annotate(f'Feature: {feature_name} | Original Scale',
 
 plt.tight_layout()
 plt.show()
+
+
+
+# 加载 metrics.npy 文件
+metrics_path = "D:\\WenHao\\实习\\湛江项目\\github\\Informer2020\\results\\informer_custom_ftS_sl90_ll10_pl30_dm512_nh8_el2_dl1_df2048_atprob_fc5_ebtimeF_dtTrue_mxTrue_Exp_0\\metrics.npy"
+metrics = np.load(metrics_path, allow_pickle=True)
+
+# 打印评估指标
+print("模型评估指标:")
+metric_names = ['MAE', 'MSE', 'RMSE', 'MAPE', 'MSPE']
+
+# 如果metrics是一个包含5个元素的数组
+if isinstance(metrics, np.ndarray) and metrics.shape == (5,):
+    for i, (name, value) in enumerate(zip(metric_names, metrics)):
+        print(f"{name}: {value}")
+else:
+    # 如果是其他格式，直接打印内容
+    print(metrics)

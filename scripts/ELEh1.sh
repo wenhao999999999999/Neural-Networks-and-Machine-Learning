@@ -1,0 +1,1 @@
+    ○ python -u main_informer.py --model informer --data custom --root_path D:/WenHao/实习/湛江项目/github/Informer2020/data/ELE/ --data_path power_load.csv --features S --target power_load --seq_len 90 --label_len 10 --pred_len 30 --e_layers 2 --d_layers 1 --attn prob --des 'Exp' --itr 1 --enc_in 1 --dec_in 1 --c_out 1
