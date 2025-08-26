@@ -1,0 +1,41 @@
+# 路径
+seed: 42
+data_path: ./data/sales_data_county_2018_2025.csv
+outputs_dir: ./outputs
+
+
+# 列名
+# date 列会被自动识别为日期；其余非日期列均视为各区县销量列
+# 如需排除某些列，可在 exclude_cols 指定
+exclude_cols: []
+
+
+# 预测相关
+seq_len: 60 # 输入窗口长度（天）
+pred_len: 31 # 预测未来天数
+val_len: 31 # 验证集天数
+test_len: 31 # 测试集天数（用于评估与可视化）
+
+
+# 训练超参
+batch_size: 64
+num_epochs: 100
+learning_rate: 1.0e-3
+hidden_dim: 128
+num_layers: 2
+dropout: 0.2
+patience: 12 # 早停
+
+
+# 特征开关（建议保持开启）
+add_time_features: true # 节假日/工作日/周几/月/是否月末 等
+weekday_cyclical: true # 周几特征用 sin/cos 周期编码
+month_cyclical: true # 月份特征用 sin/cos 周期编码
+
+
+# 评估
+mape_eps: 1.0e-6 # 实际值为 0 时的平滑常数
+
+
+# 设备
+device: auto # auto/cpu/cuda
