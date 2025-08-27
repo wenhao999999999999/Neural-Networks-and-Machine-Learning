@@ -3,6 +3,12 @@ seed: 42
 data_path: ./data/sales_data_county_2018_2025.csv
 outputs_dir: ./outputs
 
+# 数据集划分比例
+split_by_ratio: true
+train_ratio: 0.7
+val_ratio: 0.2
+test_ratio: 0.1
+
 
 # 列名
 # date 列会被自动识别为日期；其余非日期列均视为各区县销量列
@@ -11,30 +17,29 @@ exclude_cols: []
 
 
 # 预测相关
-seq_len: 60 # 输入窗口长度（天）
-pred_len: 31 # 预测未来天数
-val_len: 31 # 验证集天数
-test_len: 31 # 测试集天数（用于评估与可视化）
+seq_len: 15 # 输入窗口长度（天）
+pred_len: 1 # 预测未来天数
+future_days: 31
 
 
 # 训练超参
 batch_size: 64
 num_epochs: 100
-learning_rate: 1.0e-3
-hidden_dim: 128
-num_layers: 2
-dropout: 0.2
-patience: 12 # 早停
+learning_rate: 0.0053390375621314295
+hidden_dim: 64
+num_layers: 3
+dropout: 0.15681274574019557
+patience: 12  
 
 
 # 特征开关（建议保持开启）
 add_time_features: true # 节假日/工作日/周几/月/是否月末 等
-weekday_cyclical: true # 周几特征用 sin/cos 周期编码
+weekday_cyclical: false # 周几特征用 sin/cos 周期编码
 month_cyclical: true # 月份特征用 sin/cos 周期编码
 
 
 # 评估
-mape_eps: 1.0e-6 # 实际值为 0 时的平滑常数
+mape_eps: 1.0 # 实际值为 0 时的平滑常数
 
 
 # 设备

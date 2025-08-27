@@ -1,0 +1,17 @@
+{
+  "metric": "RMSE",
+  "best_value": 27.77951792298388,
+  "best_params": {
+    "seq_len": 15,
+    "pred_len": 1,
+    "hidden_dim": 64,
+    "num_layers": 3,
+    "learning_rate": 0.0053390375621314295,
+    "dropout": 0.15681274574019557
+  },
+  "n_trials": 30,
+  "storage": null,
+  "study_name": null,
+  "tune_root": "./outputs\\tuning\\20250827_150720",
+  "total_minutes": 6.369098726908366
+}
