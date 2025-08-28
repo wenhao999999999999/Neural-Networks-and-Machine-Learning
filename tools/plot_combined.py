@@ -92,3 +92,45 @@ def plot_combined(
 
     # 保存
     save_show(fig, out_path)
+
+
+def plot_per_series(
+    test_csv: Union[str, Path],
+    future_csv: Union[str, Path],
+    out_dir: Union[str, Path]
+):
+    """为每个区县绘制单独图像"""
+    test_csv = Path(test_csv)
+    future_csv = Path(future_csv)
+    out_dir = Path(out_dir)
+
+    if not test_csv.exists():
+        raise FileNotFoundError(f"test_csv not found: {test_csv}")
+    if not future_csv.exists():
+        raise FileNotFoundError(f"future_csv not found: {future_csv}")
+
+    df_test = pd.read_csv(test_csv, parse_dates=["date"])
+    df_future = pd.read_csv(future_csv, parse_dates=["date"])
+
+    true_cols = _pick_cols(df_test, "y_true")
+    pred_cols = _pick_cols(df_test, "y_pred")
+    fut_cols = [c for c in df_future.columns if c.startswith("y_pred_")]
+
+    if len(true_cols) != len(pred_cols) or len(pred_cols) != len(fut_cols):
+        raise ValueError("列名数量不一致，无法逐区绘图")
+
+    series_names = [c.split("_", 2)[-1] for c in true_cols]
+
+    for t_col, p_col, f_col, name in zip(true_cols, pred_cols, fut_cols, series_names):
+        fig = plt.figure(figsize=(12, 4.8))
+        plt.plot(df_test["date"], df_test[t_col], label="Test True")
+        plt.plot(df_test["date"], df_test[p_col], label="Test Pred")
+        plt.plot(df_future["date"], df_future[f_col], label="Future Forecast")
+
+        plt.title(name)
+        plt.xlabel("Date")
+        plt.ylabel("Sales")
+        plt.legend()
+        plt.grid(True, alpha=0.3)
+
+        save_show(fig, out_dir / f"{name}.png")

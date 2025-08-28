@@ -13,7 +13,7 @@ data:
 
   # 时间特征开关（可选）
   add_time_features: true
-  weekday_cyclical: false
+  weekday_cyclical: true
   month_cyclical: true
   freq: D
 

@@ -48,46 +48,32 @@ def evaluate_test(model, test_ds, pred_dates, cfg: dict, out_dir, scaler: Option
     y_pred = y_pred_flat.reshape(-1, P, D)
 
     # ---------- 反归一化（若提供 scaler） ----------
-    y_true_inv = None; y_pred_inv = None
     if scaler is not None:
-        # N*P 行，每行是一组 D 个系列值；额外特征用 0 占位即可
         n_rows = y_true.shape[0] * y_true.shape[1]
         series_cols = list(cfg["data"]["series_cols"])
         place_cols = series_cols + extra_cols
 
-        # true
         true_df = pd.DataFrame(0.0, index=range(n_rows), columns=place_cols)
         for j, name in enumerate(series_cols):
             true_df[name] = y_true.reshape(-1, D)[:, j]
         true_inv = scaler.inverse_transform(true_df)
-        y_true_inv = true_inv[series_cols].values.reshape(-1, P, D)
+        y_true = true_inv[series_cols].values.reshape(-1, P, D)
 
-        # pred（先在归一化空间 clip 到 [0,1] 再反归一化）
         pred_df = pd.DataFrame(0.0, index=range(n_rows), columns=place_cols)
         for j, name in enumerate(series_cols):
             pred_df[name] = y_pred.reshape(-1, D)[:, j]
         pred_df[series_cols] = pred_df[series_cols].clip(0.0, 1.0)
         pred_inv = scaler.inverse_transform(pred_df)
-        pred_inv[series_cols] = pred_inv[series_cols].clip(lower=0.0)  # 物理非负
-        y_pred_inv = pred_inv[series_cols].values.reshape(-1, P, D)
+        y_pred = pred_inv[series_cols].clip(lower=0.0).values.reshape(-1, P, D)
 
-        # 用反归一化后的值计算指标（更有业务意义）
-        metrics = {
-            "mae":  mae(y_true_inv.ravel(), y_pred_inv.ravel()),
-            "mse":  mse(y_true_inv.ravel(), y_pred_inv.ravel()),
-            "rmse": rmse(y_true_inv.ravel(), y_pred_inv.ravel()),
-            "mape_safe": mape_safe(y_true_inv.ravel(), y_pred_inv.ravel()),
-        }
-    else:
-        # 没有 scaler 就在 0~1 空间计算
-        metrics = {
-            "mae":  mae(y_true.ravel(), y_pred.ravel()),
-            "mse":  mse(y_true.ravel(), y_pred.ravel()),
-            "rmse": rmse(y_true.ravel(), y_pred.ravel()),
-            "mape_safe": mape_safe(y_true.ravel(), y_pred.ravel()),
-        }
+    metrics = {
+        "mae":  mae(y_true.ravel(), y_pred.ravel()),
+        "mse":  mse(y_true.ravel(), y_pred.ravel()),
+        "rmse": rmse(y_true.ravel(), y_pred.ravel()),
+        "mape_safe": mape_safe(y_true.ravel(), y_pred.ravel()),
+    }
 
-    # ---------- 落盘（带 inv 列） ----------
+    # ---------- 落盘（仅真实尺度） ----------
     rows = []
     scols = cfg["data"]["series_cols"]
     for i in range(y_true.shape[0]):
@@ -96,12 +82,10 @@ def evaluate_test(model, test_ds, pred_dates, cfg: dict, out_dir, scaler: Option
             for j, name in enumerate(scols):
                 row[f"y_true_{name}"] = y_true[i, t, j]
                 row[f"y_pred_{name}"] = y_pred[i, t, j]
-                if y_true_inv is not None:
-                    row[f"y_true_inv_{name}"] = y_true_inv[i, t, j]
-                    row[f"y_pred_inv_{name}"] = y_pred_inv[i, t, j]
             rows.append(row)
     df_pred = pd.DataFrame(rows)
 
     out_dir = Path(out_dir); ensure_dir(out_dir / "predictions")
     save_csv(out_dir / "predictions" / "test_predictions.csv", df_pred)
+    print("Evaluation metrics:", metrics)
     return metrics, df_pred

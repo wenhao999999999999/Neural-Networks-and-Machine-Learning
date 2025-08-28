@@ -15,7 +15,7 @@ import torch
 
 from tools.seed import set_seed
 from tools.io import ensure_dir
-from tools.plot_combined import plot_combined
+from tools.plot_combined import plot_per_series
 from tools.evaluator import evaluate_test
 from tools.predictor import forecast_future
 
@@ -134,7 +134,7 @@ def main():
 
     # 训练 / 加载
     if args.do_train:
-        _ = train_loop(model, train_ds, val_ds, cfg, out_dir)
+        _ = train_loop(model, train_ds, val_ds, cfg, out_dir, test_size=len(test_ds))
     else:
         ckpt_path = Path(out_dir) / "checkpoints" / "best.pt"
         if not ckpt_path.exists():
@@ -145,8 +145,6 @@ def main():
     # 评估（输出每日×多列 CSV）
     if args.do_eval:
         metrics, _df = evaluate_test(model, test_ds, test_pred_dates, cfg, out_dir, scaler=scaler if args.use_scaler else None)
-
-        print("Test metrics:", metrics)
 
     # 未来多目标预测（输出 y_pred_* / 可选 y_pred_inv_*）
     if args.do_predict:
@@ -159,12 +157,12 @@ def main():
         )
         print("Future forecast saved at:", Path(out_dir) / "predictions" / "future_forecast.csv")
 
-    # 合计视角可视化（需要分系列子图我可以再给一个工具脚本）
+    # 单区县可视化
     if args.do_plot:
         test_csv   = Path(out_dir) / "predictions" / "test_predictions.csv"
         future_csv = Path(out_dir) / "predictions" / "future_forecast.csv"
-        fig_path   = Path(cfg["paths"]["figures"]) / f"{cfg['run_name']}_combined.png"
-        plot_combined(test_csv, future_csv, fig_path)
+        fig_dir    = Path(cfg["paths"]["figures"]) / cfg['run_name']
+        plot_per_series(test_csv, future_csv, fig_dir)
 
 if __name__ == "__main__":
     main()

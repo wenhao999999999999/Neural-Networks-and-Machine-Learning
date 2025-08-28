@@ -90,26 +90,51 @@ def forecast_future(
             use_weekday_cyc=cfg["data"].get("weekday_cyclical", False),
             use_month_cyc=cfg["data"].get("month_cyclical", True),
         )
-        extra_vec = [extra_next[c] for c in extra_cols]
-        next_row = np.concatenate([y_next.astype(np.float32), np.array(extra_vec, dtype=np.float32)], axis=0)
+        # 注意：如果训练时做了缩放，则这里递归拼接到输入序列中的“时间特征”也必须按相同的缩放处理，
+        # 否则模型在推理时会接收到未缩放的特征，导致数值发散、预测不合理。
+        if scaler is not None and hasattr(scaler, "stats"):
+            scaled_extras: List[float] = []
+            for c in extra_cols:
+                v = float(extra_next[c])
+                try:
+                    lo = float(scaler.stats[c]["min"])
+                    hi = float(scaler.stats[c]["max"])
+                except Exception:
+                    lo, hi = 0.0, 1.0
+                denom = (hi - lo) if (hi - lo) != 0 else 1.0
+                vv = (v - lo) / denom
+                # 按训练时一致进行裁剪
+                if getattr(scaler, "clip", True):
+                    vv = max(0.0, min(1.0, vv))
+                scaled_extras.append(vv)
+            extra_vec = np.array(scaled_extras, dtype=np.float32)
+        else:
+            extra_vec = np.array([extra_next[c] for c in extra_cols], dtype=np.float32)
+
+        # y_next 已经是“缩放空间”的一阶预测（因为模型输入是缩放后的特征）；
+        # 这里拼接到下一时刻上下文仍需保持缩放空间。
+        next_row = np.concatenate([y_next.astype(np.float32), extra_vec], axis=0)
         cur_x = np.concatenate([cur_x[1:, :], next_row[None, :]], axis=0)
 
     preds_mat = np.asarray(preds_mat, dtype=np.float32)  # [H, D]
+
+    if scaler is not None:
+        n = preds_mat.shape[0]
+        place_cols = series_cols + extra_cols
+        place = pd.DataFrame(0.0, index=range(n), columns=place_cols)
+        for j, name in enumerate(series_cols):
+            place[name] = preds_mat[:, j]
+        place[series_cols] = place[series_cols].clip(0.0, 1.0)
+        place_inv = scaler.inverse_transform(place)
+        preds_mat = place_inv[series_cols].clip(lower=0.0).values
+
     out = {"date": dates}
     for j, name in enumerate(series_cols):
         out[f"y_pred_{name}"] = preds_mat[:, j]
     df_future = pd.DataFrame(out)
 
-
-    # 反归一化修复：提供 index & 列集合，并先在归一化空间 clip
-    if scaler is not None:
-        n = len(df_future)
-        place_cols = series_cols + extra_cols
-        place = pd.DataFrame(0.0, index=range(n), columns=place_cols)
-        for name in series_cols:
-            place[name] = df_future[f"y_pred_{name}"].values
-        place[series_cols] = place[series_cols].clip(0.0, 1.0)
-        place_inv = scaler.inverse_transform(place)
-        for name in series_cols:
-            df_future[f"y_pred_inv_{name}"] = place_inv[name].clip(lower=0.0).values
+    out_dir = Path(out_dir)
+    ensure_dir(out_dir / "predictions")
+    save_csv(out_dir / "predictions" / "future_forecast.csv", df_future)
+    return df_future
 
