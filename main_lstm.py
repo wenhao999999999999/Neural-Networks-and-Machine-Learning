@@ -67,7 +67,7 @@ def main():
     # 读取宽表（date + series_cols）
     df = pd.read_csv(cfg["data"]["csv_path"])
 
-    # （可选）缺失值修复：宽表模式 group_col=None / target_col=None
+    # 缺失值修复：宽表模式 group_col=None / target_col=None
     if args.use_fill_calendar:
         df = fill_missing_by_calendar(
             df,
