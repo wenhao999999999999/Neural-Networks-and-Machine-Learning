@@ -1,0 +1,59 @@
+{
+  "data": {
+    "csv_path": "data/sales_cleaned_stl.csv",
+    "date_col": "date",
+    "series_cols": [
+      "0000000000000001A110000000000FYW",
+      "0000000000000001A110000000000FYZ",
+      "0000000000000001A110000000000FZ2",
+      "0000000000000001A110000000000FZ5",
+      "0000000000000001A110000000000FZ8",
+      "0000000000001001A11000000000A5L0"
+    ],
+    "add_time_features": true,
+    "weekday_cyclical": true,
+    "month_cyclical": true,
+    "freq": "D"
+  },
+  "window": {
+    "seq_len": 15,
+    "pred_len": 1,
+    "stride": 1
+  },
+  "split": {
+    "train_ratio": 0.7,
+    "val_ratio": 0.2,
+    "test_ratio": 0.1
+  },
+  "model": {
+    "hidden_dim": 64,
+    "num_layers": 3,
+    "dropout": 0.1
+  },
+  "train": {
+    "device": "cuda",
+    "batch_size": 64,
+    "epochs": 100,
+    "lr": 0.0053390375621314295,
+    "patience": 10,
+    "seed": 42,
+    "grad_clip": 1.0,
+    "min_delta": 0.0
+  },
+  "eval": {
+    "metrics": [
+      "mae",
+      "mse",
+      "rmse",
+      "mape"
+    ]
+  },
+  "predict": {
+    "horizon": 31
+  },
+  "paths": {
+    "outputs": "outputs",
+    "figures": "outputs/figures"
+  },
+  "run_name": "without_weekday_cycle"
+}
