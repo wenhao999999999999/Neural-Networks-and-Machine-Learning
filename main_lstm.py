@@ -77,7 +77,7 @@ def main():
             freq=cfg["data"].get("freq", "D"),
         )
 
-    # 时间特征（与旧版一致开关）
+    # 时间特征
     df = add_time_features(
         df,
         date_col=cfg["data"]["date_col"],

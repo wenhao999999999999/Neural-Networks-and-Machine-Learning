@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 from torch.utils.data import DataLoader
 from tools.metrics import mae, mse, rmse, mape_safe
-from tools.io import ensure_dir, save_csv
+from tools.io import ensure_dir, save_csv, save_json
 
 def _derive_extra_cols(cfg_data: dict) -> List[str]:
     if not cfg_data.get("add_time_features", True):
@@ -87,5 +87,7 @@ def evaluate_test(model, test_ds, pred_dates, cfg: dict, out_dir, scaler: Option
 
     out_dir = Path(out_dir); ensure_dir(out_dir / "predictions")
     save_csv(out_dir / "predictions" / "test_predictions.csv", df_pred)
+    ensure_dir(out_dir / "logs")
+    save_json(metrics, out_dir / "logs" / "eval_metrics.json")
     print("Evaluation metrics:", metrics)
     return metrics, df_pred

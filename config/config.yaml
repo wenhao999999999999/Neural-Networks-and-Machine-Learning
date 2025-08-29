@@ -1,6 +1,6 @@
 data:
-  csv_path: data/sales_data_county_2018_2025.csv   # 你的宽表数据：date + 6列区县销量
-  date_col: date
+  csv_path: data/sales_cleaned_stl.csv   # date + 6列区县销量
+  date_col: date  # 日期列名称，用于时间索引
 
   # 需要同时作为“输入特征 & 预测目标”的区县列（6个）
   series_cols:
@@ -12,45 +12,47 @@ data:
     - 0000000000001001A11000000000A5L0
 
   # 时间特征开关（可选）
-  add_time_features: true
-  weekday_cyclical: true
-  month_cyclical: true
-  freq: D
+  add_time_features: true # 是否在数据中加入时间特征
+  weekday_cyclical: true # 是否使用正弦余弦周期编码表示星期
+  month_cyclical: true # 是否使用正弦余弦周期编码表示月份
+  freq: D # 时间序列频率，这里为按天
 
 window:
-  seq_len: 15
-  pred_len: 1
-  stride: 1
+  seq_len: 15 # 输入序列长度
+  pred_len: 1 # 每次预测的时间步数
+  stride: 1 # 滑窗移动步长
 
 split:
-  train_ratio: 0.7
-  val_ratio: 0.2
-  test_ratio: 0.1
+  train_ratio: 0.7 # 训练集比例
+  val_ratio: 0.2 # 验证集比例
+  test_ratio: 0.1 # 测试集比例
 
 model:
-  hidden_dim: 64
-  num_layers: 2
-  dropout: 0.1
+  hidden_dim: 64 # LSTM隐层维度
+  num_layers: 3 # LSTM层数
+  dropout: 0.15681274574019557 # 随机失活率
   # input_size 自动按 [len(series_cols) + 时间特征数] 计算，无需手填
 
 train:
-  device: cuda
-  batch_size: 64
-  epochs: 100
-  lr: 0.001
-  patience: 10
-  seed: 42
-  grad_clip: 1.0
-  min_delta: 0.0
+  device: cuda # 训练设备
+  batch_size: 64 # 批大小
+  epochs: 100 # 训练轮数
+  lr: 0.0053390375621314295 # 学习率
+  patience: 10 # 早停耐心值；连续若干轮无改进则停止训练
+  seed: 42 # 随机种子，保证结果可复现
+  grad_clip: 1.0 # 梯度裁剪阈值，防止梯度爆炸
+  min_delta: 0.0 # 早停时最小改进幅度阈值
 
 eval:
-  metrics: [mae, mse, rmse, mape]
+  metrics: [mae, mse, rmse, mape] # 评估时计算的指标列表
 
 predict:
-  horizon: 31
+  horizon: 31 # 未来预测的时间步长度
 
 paths:
-  outputs: outputs
-  figures: outputs/figures
+  outputs: outputs # 保存训练、预测结果的根目录
+  figures: outputs/figures # 绘图输出路径，位于 outputs 下
 
-run_name: best_retrain1
+run_name: best_retrain1 # 本次运行的标识名称，用于区分不同实验
+
+
