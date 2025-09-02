@@ -18,6 +18,8 @@ from tools.io import ensure_dir
 from tools.plot_combined import plot_per_series
 from tools.evaluator import evaluate_test
 from tools.predictor import forecast_future
+from tools.logging_utils import get_logger
+from tools.config_validator import validate_and_fill
 
 from preprocess.preprocessing import (
     add_time_features, fill_missing_by_calendar, MinMaxScalerDict
@@ -55,14 +57,30 @@ def main():
     parser.add_argument("--do_plot", action="store_true")
     parser.add_argument("--use_fill_calendar", action="store_true")
     parser.add_argument("--use_scaler", action="store_true")
+    parser.add_argument("--device", type=str, default=None, help="可选覆盖配置中的设备，如 cpu/cuda")
     args = parser.parse_args()
 
-    cfg = load_cfg(args.config)
-    if args.run_name: cfg["run_name"] = args.run_name
+    cfg = validate_and_fill(load_cfg(args.config))
+    if args.run_name:
+        cfg["run_name"] = args.run_name
+    if args.device:
+        cfg["train"]["device"] = args.device
+    if not cfg.get("run_name"):
+        from datetime import datetime
+        cfg["run_name"] = datetime.now().strftime("run_%Y%m%d_%H%M%S")
     set_seed(cfg["train"].get("seed", 42))
 
     out_dir = Path(cfg["paths"]["outputs"]) / "runs" / cfg["run_name"]
     ensure_dir(out_dir)
+    logger = get_logger("lstm_forecast", log_file=Path(out_dir) / "logs" / "run.log")
+    logger.info(f"Run name: {cfg['run_name']}")
+    logger.info(f"Config loaded from: {args.config}")
+
+    # 校验并读取宽表（date + series_cols）
+    csv_path = cfg["data"]["csv_path"]
+    if not Path(csv_path).exists():
+        raise FileNotFoundError(f"数据文件不存在：{csv_path}")
+    # 读取宽表
 
     # 读取宽表（date + series_cols）
     df = pd.read_csv(cfg["data"]["csv_path"])
@@ -134,7 +152,7 @@ def main():
 
     # 训练 / 加载
     if args.do_train:
-        _ = train_loop(model, train_ds, val_ds, cfg, out_dir, test_size=len(test_ds))
+        _ = train_loop(model, train_ds, val_ds, cfg, out_dir, test_size=len(test_ds), logger=logger)
     else:
         ckpt_path = Path(out_dir) / "checkpoints" / "best.pt"
         if not ckpt_path.exists():
@@ -144,7 +162,15 @@ def main():
 
     # 评估（输出每日×多列 CSV）
     if args.do_eval:
-        metrics, _df = evaluate_test(model, test_ds, test_pred_dates, cfg, out_dir, scaler=scaler if args.use_scaler else None)
+        metrics, _df = evaluate_test(
+            model,
+            test_ds,
+            test_pred_dates,
+            cfg,
+            out_dir,
+            scaler=scaler if args.use_scaler else None,
+            logger=logger,
+        )
 
     # 未来多目标预测（输出 y_pred_* / 可选 y_pred_inv_*）
     if args.do_predict:
@@ -154,8 +180,9 @@ def main():
             cfg,
             out_dir,
             scaler=scaler if args.use_scaler else None,
+            logger=logger,
         )
-        print("Future forecast saved at:", Path(out_dir) / "predictions" / "future_forecast.csv")
+        logger.info(f"Future forecast saved at: {Path(out_dir) / 'predictions' / 'future_forecast.csv'}")
 
     # 单区县可视化
     if args.do_plot:

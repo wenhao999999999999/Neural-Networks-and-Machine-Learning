@@ -5,6 +5,8 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from tools.io import ensure_dir, snapshot_config
+from typing import Optional
+import logging
 
 class EarlyStopper:
     def __init__(self, patience=10, min_delta=0.0, best_is_min=True):
@@ -30,21 +32,22 @@ class EarlyStopper:
             if self.counter >= self.patience:
                 self.stop = True
 
-def train_loop(model, train_ds, val_ds, cfg: dict, out_dir, test_size=None):
+def train_loop(model, train_ds, val_ds, cfg: dict, out_dir, test_size=None, logger: Optional[logging.Logger] = None):
     device = cfg["train"]["device"] if torch.cuda.is_available() else "cpu"
     model = model.to(device)
 
     train_loader = DataLoader(train_ds, batch_size=cfg["train"]["batch_size"], shuffle=True)
     val_loader = DataLoader(val_ds, batch_size=cfg["train"]["batch_size"], shuffle=False)
 
-    print(
+    _log = (logger.info if logger is not None else print)
+    _log(
         "Training configuration:\n"
         f"  device: {device}\n"
         f"  epochs: {cfg['train']['epochs']}\n"
         f"  batch_size: {cfg['train']['batch_size']}\n"
         f"  learning_rate: {cfg['train']['lr']}"
     )
-    print(
+    _log(
         f"Dataset sizes -> train: {len(train_ds)}, val: {len(val_ds)}, "
         f"test: {test_size if test_size is not None else 'N/A'}"
     )
@@ -99,7 +102,7 @@ def train_loop(model, train_ds, val_ds, cfg: dict, out_dir, test_size=None):
 
         epoch_time = time.time() - epoch_start
         remaining = epoch_time * (cfg["train"]["epochs"] - epoch)
-        print(
+        _log(
             f"Epoch {epoch:03d} | train {train_loss:.6f} | val {val_loss:.6f} | "
             f"lr {optim.param_groups[0]['lr']:.2e} | time {epoch_time:.2f}s | "
             f"eta {remaining/60:.2f}m"
@@ -110,8 +113,8 @@ def train_loop(model, train_ds, val_ds, cfg: dict, out_dir, test_size=None):
             torch.save({"model": model.state_dict()}, best_path)
         early.step(val_loss)
         if early.stop:
-            print("Early stopping triggered.")
+            _log("Early stopping triggered.")
             break
 
-    print("Best model saved at:", best_path)
+    _log(f"Best model saved at: {best_path}")
     return best_path

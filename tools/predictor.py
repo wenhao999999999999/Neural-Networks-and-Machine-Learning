@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 import torch
 from tools.io import ensure_dir, save_csv
+from typing import Optional
+import logging
 
 # 无库时，周末当休息日
 try:
@@ -58,6 +60,7 @@ def forecast_future(
     cfg: dict,
     out_dir: Union[str, Path],
     scaler: Optional[object] = None,
+    logger: Optional[logging.Logger] = None,
 ):
     device = cfg["train"]["device"] if torch.cuda.is_available() else "cpu"
     model = model.to(device); model.eval()
@@ -136,5 +139,6 @@ def forecast_future(
     out_dir = Path(out_dir)
     ensure_dir(out_dir / "predictions")
     save_csv(out_dir / "predictions" / "future_forecast.csv", df_future)
+    if logger is not None:
+        logger.info(f"Saved future forecast to: {out_dir / 'predictions' / 'future_forecast.csv'}")
     return df_future
-
